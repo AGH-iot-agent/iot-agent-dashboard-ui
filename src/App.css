@@ -1,0 +1,112 @@
+.App {
+  min-height: 100vh;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  text-align: center;
+}
+
+.App-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.metric-card {
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.metric-card h3 {
+  margin: 0 0 10px 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.metric-value {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.metric-value.alert {
+  color: #e74c3c;
+}
+
+.devices-section h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.devices-table {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-collapse: collapse;
+}
+
+.devices-table th,
+.devices-table td {
+  padding: 15px;
+  text-align: left;
+}
+
+.devices-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.devices-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.status {
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status.online {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status.offline {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+}
