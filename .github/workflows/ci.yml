@@ -9,6 +9,7 @@ on:
 jobs:
   pipeline:
     uses: AGH-iot-agent/common-pipeline/.github/workflows/common-pipeline.yml@feat/IOTAG-01-common-pipeline
+    secrets: inherit
     with:
       service_name: iot-agent-dashboard-ui
       project_type: node
