@@ -79,7 +79,8 @@ istio:
     hosts:
       - iot-agent-dashboard-ui-dev.iotag-dev.com
     # Gateways list, if empty chart auto-selects istio-system/istio-ingressgateway when present
-    gateways: []
+    gateways:
+      - istio-system/istio-ingressgateway
     # Optional full HTTP spec override. If empty, chart creates a default route
     http:
       - match:
@@ -87,7 +88,7 @@ istio:
               prefix: /
         route:
           - destination:
-              host: iot-agent-dashboard-ui-dev.iotag-dev.svc.cluster.local
+              host: iot-agent-dashboard-ui.iotag-dev.svc.cluster.local
               port:
                 number: 80
     # http: []
