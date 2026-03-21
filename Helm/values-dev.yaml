@@ -85,6 +85,36 @@ istio:
     http:
       - match:
           - uri:
+              prefix: /api/devices
+        rewrite:
+          uri: /devices
+        route:
+          - destination:
+              host: iot-agent-device-api.iotag-dev.svc.cluster.local
+              port:
+                number: 80
+      - match:
+          - uri:
+              prefix: /api/summary
+        rewrite:
+          uri: /summary
+        route:
+          - destination:
+              host: iot-agent-dashboard-api.iotag-dev.svc.cluster.local
+              port:
+                number: 80
+      - match:
+          - uri:
+              prefix: /api
+        rewrite:
+          uri: /
+        route:
+          - destination:
+              host: iot-agent-gateway-api.iotag-dev.svc.cluster.local
+              port:
+                number: 80
+      - match:
+          - uri:
               prefix: /
         route:
           - destination:

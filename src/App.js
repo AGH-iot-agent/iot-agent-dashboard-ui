@@ -7,13 +7,19 @@ function App() {
 
   useEffect(() => {
     fetch('/api/summary')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Summary request failed');
+        return res.json();
+      })
       .then(data => setSummary(data))
       .catch(() => setSummary({ devicesOnline: 0, activeAlerts: 0, eventsPerMinute: 0 }));
 
     fetch('/api/devices')
-      .then(res => res.json())
-      .then(data => setDevices(data))
+      .then(res => {
+        if (!res.ok) throw new Error('Devices request failed');
+        return res.json();
+      })
+      .then(data => setDevices(Array.isArray(data) ? data : []))
       .catch(() => setDevices([]));
   }, []);
 
