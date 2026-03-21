@@ -218,7 +218,7 @@ livenessProbe:
   # parameters for probes
   scheme: HTTP
   path: /
-  port: default-service
+  port: 80
   command:
     - ls -la /
 
@@ -241,7 +241,7 @@ readinessProbe:
   # parameters for probes
   scheme: HTTP
   path: /
-  port: default-service
+  port: 80
   command:
     - ls -la /
 

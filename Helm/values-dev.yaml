@@ -148,7 +148,7 @@ service:
   annotations: {}
   type: ClusterIP
   port: 80
-  targetPort: 8080
+  targetPort: 80
   name: default-service
   # allocateLoadBalancerNodePorts: false
   # externalTrafficPolicy: Local
@@ -183,7 +183,7 @@ lifecycle: {}
 # Environment variables (for globals, all deployments)
 globalEnvs:
   - name: API_UPSTREAM
-    value: "http://iot-agent-gateway-api.iotag-dev.svc.cluster.local:8080/"
+    value: "http://iot-agent-gateway-api.iotag-dev.svc.cluster.local:80/"
 
 # Secondary environment variables (for globals, all deployments, to help with multi-inheritance)
 globalEnvsSecondary: []
@@ -219,7 +219,7 @@ livenessProbe:
   # parameters for probes
   scheme: HTTP
   path: /
-  port: default-service
+  port: 80
   command:
     - ls -la /
 
@@ -242,7 +242,7 @@ readinessProbe:
   # parameters for probes
   scheme: HTTP
   path: /
-  port: default-service
+  port: 80
   command:
     - ls -la /
 
