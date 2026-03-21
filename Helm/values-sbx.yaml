@@ -180,7 +180,9 @@ labelsEnableDefault: true
 lifecycle: {}
 
 # Environment variables (for globals, all deployments)
-globalEnvs: []
+globalEnvs:
+  - name: API_UPSTREAM
+    value: "http://iot-agent-gateway-api.iotag-sbx.svc.cluster.local:8080/"
 
 # Secondary environment variables (for globals, all deployments, to help with multi-inheritance)
 globalEnvsSecondary: []
