@@ -63,7 +63,7 @@ security:
 # Istio VirtualService definitions
 istio:
   gateway:
-    createIfMissing: true
+    createIfMissing: false
     namespace: istio-system
     name: istio-ingressgateway
     selector:
