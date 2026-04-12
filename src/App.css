@@ -59,6 +59,77 @@
   color: #333;
 }
 
+.charts-header {
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.charts-header select {
+  border: 1px solid #d4d8df;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.chart-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.chart-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+}
+
+.chart-card h3 {
+  margin: 0 0 8px 0;
+  color: #1b2a3a;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.chart-wrap {
+  background: #f6f8fb;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 180px;
+}
+
+.chart-range {
+  display: flex;
+  justify-content: space-between;
+  color: #637282;
+  font-size: 0.8rem;
+}
+
+.zone-and-alerts {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.alerts-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.alerts-list li {
+  margin-bottom: 8px;
+  color: #3d4450;
+}
+
 .devices-table {
   width: 100%;
   background: white;
@@ -84,6 +155,11 @@
 
 .devices-table tbody tr:hover {
   background-color: #f8f9fa;
+}
+
+.devices-table.compact th,
+.devices-table.compact td {
+  padding: 10px 12px;
 }
 
 .status {
