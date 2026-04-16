@@ -90,7 +90,7 @@ istio:
           uri: /devices
         route:
           - destination:
-              host: iot-agent-device-api-dev.iotag-dev.svc.cluster.local
+              host: iot-agent-device-api.iotag-dev.svc.cluster.local
               port:
                 number: 80
       - match:
