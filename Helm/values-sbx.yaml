@@ -104,6 +104,14 @@ istio:
                 number: 80
       - match:
           - uri:
+              prefix: /api/auth
+        route:
+          - destination:
+              host: iot-agent-authentication.iotag-sbx.svc.cluster.local
+              port:
+                number: 80
+      - match:
+          - uri:
               prefix: /api
         rewrite:
           uri: /
