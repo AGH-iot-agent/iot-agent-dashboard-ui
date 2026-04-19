@@ -121,7 +121,7 @@ function App() {
   const [historyPage, setHistoryPage] = useState(1);
 
   const redirectToLogin = () => {
-    globalThis.location.assign('/login');
+    window.location.assign('/login');
   };
 
   const loadJsonOrFallback = async (url, fallbackValue) => {
@@ -212,7 +212,7 @@ function App() {
   const handleLogout = () => {
     fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       .finally(() => {
-        globalThis.location.assign('/login');
+        window.location.assign('/login');
       });
   };
 
