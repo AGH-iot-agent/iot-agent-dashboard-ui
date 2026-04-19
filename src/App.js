@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import './App.css';
 
 const EMPTY_SUMMARY = { devicesOnline: 0, activeAlerts: 0, eventsPerMinute: 0 };
 const DEFAULT_TAB = 'overview';
+const HISTORY_PAGE_SIZE = 12;
 
 function MiniLineChart({ points, dataKey, color, label }) {
   if (!points || points.length === 0) {
@@ -33,7 +35,7 @@ function MiniLineChart({ points, dataKey, color, label }) {
 
   return (
     <div className="chart-wrap">
-      <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" role="img" aria-label={label}>
+      <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" aria-label={label}>
         <polyline points={polyline} fill="none" stroke={color} strokeWidth="3" />
       </svg>
       <div className="chart-range">
@@ -80,6 +82,31 @@ function formatTimestamp(value) {
   return parsed.toLocaleString('pl-PL');
 }
 
+function toSortableNumber(value, fallback = -Infinity) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toSortableTimestamp(value) {
+  if (!value) {
+    return -Infinity;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : -Infinity;
+}
+
+MiniLineChart.propTypes = {
+  points: PropTypes.arrayOf(PropTypes.object),
+  dataKey: PropTypes.string.isRequired,
+  color: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired
+};
+
+MiniLineChart.defaultProps = {
+  points: []
+};
+
 function App() {
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [devices, setDevices] = useState([]);
@@ -90,9 +117,11 @@ function App() {
   const [series, setSeries] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sortConfig, setSortConfig] = useState({ column: 'lastSeen', direction: 'desc' });
+  const [historyPage, setHistoryPage] = useState(1);
 
   const redirectToLogin = () => {
-    window.location.assign('/login');
+    globalThis.location.assign('/login');
   };
 
   const loadJsonOrFallback = async (url, fallbackValue) => {
@@ -183,7 +212,7 @@ function App() {
   const handleLogout = () => {
     fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       .finally(() => {
-        window.location.assign('/login');
+        globalThis.location.assign('/login');
       });
   };
 
@@ -236,6 +265,55 @@ function App() {
     });
   }, [deviceRows, searchQuery, statusFilter]);
 
+  const sortedDevices = useMemo(() => {
+    const rows = [...filteredDevices];
+    const { column, direction } = sortConfig;
+    const multiplier = direction === 'asc' ? 1 : -1;
+
+    rows.sort((a, b) => {
+      let left;
+      let right;
+
+      switch (column) {
+      case 'status':
+        left = String(a.status || '').toLowerCase();
+        right = String(b.status || '').toLowerCase();
+        break;
+      case 'zone':
+        left = String(a.krakowZone || a.telemetry?.krakowZone || '').toLowerCase();
+        right = String(b.krakowZone || b.telemetry?.krakowZone || '').toLowerCase();
+        break;
+      case 'temperature':
+        left = toSortableNumber(a.temperatureC);
+        right = toSortableNumber(b.temperatureC);
+        break;
+      case 'energy':
+        left = toSortableNumber(a.energyUsageW);
+        right = toSortableNumber(b.energyUsageW);
+        break;
+      case 'alerts':
+        left = toSortableNumber(a.alertsCount, 0);
+        right = toSortableNumber(b.alertsCount, 0);
+        break;
+      case 'lastSeen':
+      default:
+        left = toSortableTimestamp(a.lastSeen);
+        right = toSortableTimestamp(b.lastSeen);
+        break;
+      }
+
+      if (left < right) {
+        return -1 * multiplier;
+      }
+      if (left > right) {
+        return 1 * multiplier;
+      }
+      return 0;
+    });
+
+    return rows;
+  }, [filteredDevices, sortConfig]);
+
   const zoneSummary = useMemo(() => {
     return latestTelemetry.reduce((acc, entry) => {
       const zone = entry.krakowZone || 'UNKNOWN';
@@ -257,10 +335,52 @@ function App() {
     ? alerts.filter(alert => matchesDevice(alert, selectedDevice.id))
     : [];
   const recentSeries = [...series].slice(-10).reverse();
+  const sortedSeriesHistory = useMemo(() => {
+    return [...series].sort((a, b) => {
+      const left = toSortableTimestamp(a.timestamp || a.createdAt || a.recordedAt);
+      const right = toSortableTimestamp(b.timestamp || b.createdAt || b.recordedAt);
+      return right - left;
+    });
+  }, [series]);
+  const historyPagesCount = Math.max(1, Math.ceil(sortedSeriesHistory.length / HISTORY_PAGE_SIZE));
+  const pagedHistory = sortedSeriesHistory.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE
+  );
+  const selectedAttributes = Object.entries({
+    ...selectedDevice,
+    ...selectedTelemetry
+  });
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [selectedDeviceId]);
 
   const openDevice = deviceId => {
     setSelectedDeviceId(String(deviceId));
     setSelectedTab(DEFAULT_TAB);
+    setHistoryPage(1);
+  };
+
+  const requestSort = column => {
+    setSortConfig(prev => {
+      if (prev.column !== column) {
+        return { column, direction: 'asc' };
+      }
+
+      return {
+        column,
+        direction: prev.direction === 'asc' ? 'desc' : 'asc'
+      };
+    });
+  };
+
+  const getSortState = column => {
+    if (sortConfig.column !== column) {
+      return '';
+    }
+
+    return sortConfig.direction === 'asc' ? 'ASC' : 'DESC';
   };
 
   const renderOverviewTab = () => {
@@ -338,7 +458,7 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {Object.entries({ ...(selectedDevice || {}), ...(selectedTelemetry || {}) }).map(([key, value]) => (
+              {selectedAttributes.map(([key, value]) => (
                 <tr key={key}>
                   <td>{key}</td>
                   <td>{typeof value === 'object' ? JSON.stringify(value) : String(value ?? '-')}</td>
@@ -434,6 +554,62 @@ function App() {
     </section>
   );
 
+  const renderHistoryTab = () => (
+    <section className="detail-panel wide">
+      <div className="panel-heading">
+        <h3>Historia telemetryczna</h3>
+        <span className="pill neutral">Strona {historyPage} / {historyPagesCount}</span>
+      </div>
+
+      {sortedSeriesHistory.length === 0 ? (
+        <p className="empty-state">Brak historii telemetrycznej dla wybranego urzadzenia.</p>
+      ) : (
+        <>
+          <table className="devices-table compact">
+            <thead>
+              <tr>
+                <th>Czas</th>
+                <th>Temperatura</th>
+                <th>Energia</th>
+                <th>Leak</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedHistory.map((point, index) => (
+                <tr key={`${point.timestamp || point.createdAt || point.recordedAt || index}-${index}`}>
+                  <td>{formatTimestamp(point.timestamp || point.createdAt || point.recordedAt)}</td>
+                  <td>{formatValue(point.temperatureC, ' C')}</td>
+                  <td>{formatValue(point.energyUsageW, ' W')}</td>
+                  <td>{point.leak ? 'Tak' : 'Nie'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="pagination-row">
+            <button
+              className="pager-button"
+              onClick={() => setHistoryPage(page => Math.max(1, page - 1))}
+              disabled={historyPage <= 1}
+            >
+              Poprzednia
+            </button>
+            <span className="pagination-meta">
+              Pokazano {pagedHistory.length} z {sortedSeriesHistory.length} rekordow
+            </span>
+            <button
+              className="pager-button"
+              onClick={() => setHistoryPage(page => Math.min(historyPagesCount, page + 1))}
+              disabled={historyPage >= historyPagesCount}
+            >
+              Nastepna
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -460,7 +636,56 @@ function App() {
           </article>
         </section>
 
-        {!selectedDevice ? (
+        {selectedDevice ? (
+          <section className="detail-view">
+            <div className="detail-header">
+              <div>
+                <button className="back-button" onClick={() => setSelectedDeviceId('')}>Powrot do tabeli</button>
+                <p className="eyebrow">widok urzadzenia</p>
+                <h2>{selectedDevice.name || selectedDevice.id}</h2>
+                <p className="hero-copy">
+                  Szczegoly dla sensora {selectedDevice.id} w ukladzie zakladek z danymi telemetrycznymi, alertami i zestawem atrybutow.
+                </p>
+              </div>
+              <div className="detail-badges">
+                <span className={`status ${(selectedDevice.status || '').toLowerCase()}`}>{selectedDevice.status || 'UNKNOWN'}</span>
+                <span className="pill neutral">{selectedDevice.krakowZone || selectedTelemetry?.krakowZone || 'NO ZONE'}</span>
+              </div>
+            </div>
+
+            <nav className="tabs-nav" aria-label="Szczegoly urzadzenia">
+              <button
+                className={selectedTab === 'overview' ? 'tab active' : 'tab'}
+                onClick={() => setSelectedTab('overview')}
+              >
+                Przeglad
+              </button>
+              <button
+                className={selectedTab === 'telemetry' ? 'tab active' : 'tab'}
+                onClick={() => setSelectedTab('telemetry')}
+              >
+                Telemetria
+              </button>
+              <button
+                className={selectedTab === 'alerts' ? 'tab active' : 'tab'}
+                onClick={() => setSelectedTab('alerts')}
+              >
+                Alerty
+              </button>
+              <button
+                className={selectedTab === 'history' ? 'tab active' : 'tab'}
+                onClick={() => setSelectedTab('history')}
+              >
+                Historia
+              </button>
+            </nav>
+
+            {selectedTab === 'overview' && renderOverviewTab()}
+            {selectedTab === 'telemetry' && renderTelemetryTab()}
+            {selectedTab === 'alerts' && renderAlertsTab()}
+            {selectedTab === 'history' && renderHistoryTab()}
+          </section>
+        ) : (
           <>
             <section className="hero-panel">
               <div>
@@ -493,17 +718,42 @@ function App() {
                   <thead>
                     <tr>
                       <th>Urzadzenie</th>
-                      <th>Status</th>
-                      <th>Strefa</th>
-                      <th>Temperatura</th>
-                      <th>Energia</th>
+                      <th>
+                        <button className="sort-button" onClick={() => requestSort('status')}>
+                          Status <span>{getSortState('status')}</span>
+                        </button>
+                      </th>
+                      <th>
+                        <button className="sort-button" onClick={() => requestSort('zone')}>
+                          Strefa <span>{getSortState('zone')}</span>
+                        </button>
+                      </th>
+                      <th>
+                        <button className="sort-button" onClick={() => requestSort('temperature')}>
+                          Temperatura <span>{getSortState('temperature')}</span>
+                        </button>
+                      </th>
+                      <th>
+                        <button className="sort-button" onClick={() => requestSort('energy')}>
+                          Energia <span>{getSortState('energy')}</span>
+                        </button>
+                      </th>
                       <th>Leak</th>
-                      <th>Alerty</th>
-                      <th>Ostatni odczyt</th>
+                      <th>
+                        <button className="sort-button" onClick={() => requestSort('alerts')}>
+                          Alerty <span>{getSortState('alerts')}</span>
+                        </button>
+                      </th>
+                      <th>
+                        <button className="sort-button" onClick={() => requestSort('lastSeen')}>
+                          Ostatni odczyt <span>{getSortState('lastSeen')}</span>
+                        </button>
+                      </th>
+                      <th>Akcja</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredDevices.map(device => (
+                    {sortedDevices.map(device => (
                       <tr key={device.id} onClick={() => openDevice(device.id)} className="clickable-row">
                         <td>
                           <div className="device-cell">
@@ -520,6 +770,17 @@ function App() {
                         <td>{device.leak ? 'Tak' : 'Nie'}</td>
                         <td>{device.alertsCount}</td>
                         <td>{formatTimestamp(device.lastSeen)}</td>
+                        <td>
+                          <button
+                            className="details-button"
+                            onClick={event => {
+                              event.stopPropagation();
+                              openDevice(device.id);
+                            }}
+                          >
+                            Szczegoly
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -581,48 +842,6 @@ function App() {
               </article>
             </section>
           </>
-        ) : (
-          <section className="detail-view">
-            <div className="detail-header">
-              <div>
-                <button className="back-button" onClick={() => setSelectedDeviceId('')}>Powrot do tabeli</button>
-                <p className="eyebrow">widok urzadzenia</p>
-                <h2>{selectedDevice.name || selectedDevice.id}</h2>
-                <p className="hero-copy">
-                  Szczegoly dla sensora {selectedDevice.id} w ukladzie zakladek z danymi telemetrycznymi, alertami i zestawem atrybutow.
-                </p>
-              </div>
-              <div className="detail-badges">
-                <span className={`status ${(selectedDevice.status || '').toLowerCase()}`}>{selectedDevice.status || 'UNKNOWN'}</span>
-                <span className="pill neutral">{selectedDevice.krakowZone || selectedTelemetry?.krakowZone || 'NO ZONE'}</span>
-              </div>
-            </div>
-
-            <nav className="tabs-nav" aria-label="Szczegoly urzadzenia">
-              <button
-                className={selectedTab === 'overview' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('overview')}
-              >
-                Przeglad
-              </button>
-              <button
-                className={selectedTab === 'telemetry' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('telemetry')}
-              >
-                Telemetria
-              </button>
-              <button
-                className={selectedTab === 'alerts' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('alerts')}
-              >
-                Alerty
-              </button>
-            </nav>
-
-            {selectedTab === 'overview' && renderOverviewTab()}
-            {selectedTab === 'telemetry' && renderTelemetryTab()}
-            {selectedTab === 'alerts' && renderAlertsTab()}
-          </section>
         )}
       </main>
     </div>
