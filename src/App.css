@@ -8,8 +8,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 24px 32px;
+  gap: 14px;
+  padding: 16px 24px;
   color: #ffffff;
   background: linear-gradient(180deg, #2f6fb5 0%, #2b5f9a 100%);
   box-shadow: 0 2px 8px rgba(27, 76, 136, 0.15);
@@ -44,14 +44,14 @@
 .dashboard-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 20px 36px;
+  padding: 14px 16px 24px;
 }
 
 .metrics-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .metric-card,
@@ -65,33 +65,33 @@
 }
 
 .metric-card {
-  padding: 18px 20px;
+  padding: 12px 14px;
 }
 
 .metric-card span {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   color: #55769b;
   font-size: 0.85rem;
   text-transform: uppercase;
 }
 
 .metric-card strong {
-  font-size: 2rem;
+  font-size: 1.65rem;
   color: #1d4f8f;
 }
 
 .content-card {
-  padding: 18px;
-  margin-bottom: 20px;
+  padding: 12px;
+  margin-bottom: 12px;
 }
 
 .section-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .section-header h2 {
@@ -112,19 +112,19 @@
 .table-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .table-controls input,
 .table-controls select {
-  min-width: 220px;
+  min-width: 180px;
 }
 
 input,
 select {
   border: 1px solid #bfd4ea;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   color: #17365d;
   background: #ffffff;
 }
@@ -136,7 +136,7 @@ select {
 
 .devices-table th,
 .devices-table td {
-  padding: 12px 14px;
+  padding: 8px 10px;
   text-align: left;
   border-bottom: 1px solid #e3edf8;
 }
@@ -224,21 +224,21 @@ select {
 
 .detail-meta {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .tabs-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .tab {
   border: 1px solid #bfd4ea;
   border-radius: 8px;
-  padding: 9px 14px;
+  padding: 7px 10px;
   color: #27568f;
   background: #ffffff;
   cursor: pointer;
@@ -258,7 +258,7 @@ select {
 .detail-grid,
 .chart-grid {
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .detail-grid {
@@ -266,12 +266,12 @@ select {
 }
 
 .detail-card {
-  padding: 16px;
+  padding: 10px;
 }
 
 .detail-card h3,
 .chart-card h4 {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   color: #1d4f8f;
 }
 
@@ -280,11 +280,11 @@ select {
 }
 
 .chart-card {
-  padding: 16px;
+  padding: 10px;
 }
 
 .chart-wrap {
-  padding: 10px;
+  padding: 8px;
   border-radius: 8px;
   background: #f7fbff;
 }
@@ -309,18 +309,18 @@ select {
 }
 
 .pagination-row {
-  margin-top: 14px;
+  margin-top: 8px;
 }
 
 .top-border {
-  padding-top: 14px;
+  padding-top: 8px;
   border-top: 1px solid #e3edf8;
 }
 
 .pager-button {
   border: 1px solid #bfd4ea;
   border-radius: 8px;
-  padding: 9px 14px;
+  padding: 7px 10px;
   color: #27568f;
   background: #ffffff;
   cursor: pointer;
@@ -332,7 +332,7 @@ select {
 }
 
 .empty-state {
-  padding: 24px;
+  padding: 14px;
   text-align: center;
   color: #36506f;
   border: 1px dashed #bfd4ea;
@@ -364,13 +364,13 @@ select {
 
 @media (max-width: 640px) {
   .dashboard-container {
-    padding: 16px 12px 24px;
+    padding: 10px 8px 16px;
   }
 
   .content-card,
   .detail-card,
   .chart-card {
-    padding: 14px;
+    padding: 10px;
   }
 
   .devices-table {
