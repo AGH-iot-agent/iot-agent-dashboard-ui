@@ -211,7 +211,8 @@ podAnnotations: {}
 usingNewRecommendedLabels: false
 
 # Additional labels put onto anything that can be labelled (pods, services)
-labels: {}
+labels:
+  service_name: "iot-agent-dashboard-ui"
 
 # This enables the "default" label we automatically put everywhere (app: <name>)
 labelsEnableDefault: true
