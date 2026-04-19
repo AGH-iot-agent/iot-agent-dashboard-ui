@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 16px 24px;
+  padding: 12px 18px;
   color: #ffffff;
   background: linear-gradient(180deg, #2f6fb5 0%, #2b5f9a 100%);
   box-shadow: 0 2px 8px rgba(27, 76, 136, 0.15);
@@ -17,11 +17,12 @@
 
 .app-header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.7rem;
 }
 
 .header-subtitle {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
+  font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.86);
 }
 
@@ -44,14 +45,14 @@
 .dashboard-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 14px 16px 24px;
+  padding: 10px 12px 16px;
 }
 
 .metrics-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .metric-card,
@@ -65,43 +66,44 @@
 }
 
 .metric-card {
-  padding: 12px 14px;
+  padding: 8px 10px;
 }
 
 .metric-card span {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: #55769b;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
 }
 
 .metric-card strong {
-  font-size: 1.65rem;
+  font-size: 1.35rem;
   color: #1d4f8f;
 }
 
 .content-card {
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
 }
 
 .section-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .section-header h2 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: #1d4f8f;
-  font-size: 1.45rem;
+  font-size: 1.25rem;
 }
 
 .section-header p {
   margin: 0;
+  font-size: 0.9rem;
   color: #5e7898;
 }
 
@@ -112,19 +114,19 @@
 .table-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .table-controls input,
 .table-controls select {
-  min-width: 180px;
+  min-width: 160px;
 }
 
 input,
 select {
   border: 1px solid #bfd4ea;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 6px;
+  padding: 6px 8px;
   color: #17365d;
   background: #ffffff;
 }
@@ -136,16 +138,20 @@ select {
 
 .devices-table th,
 .devices-table td {
-  padding: 8px 10px;
+  padding: 6px 8px;
   text-align: left;
   border-bottom: 1px solid #e3edf8;
 }
 
 .devices-table thead th {
   color: #2d5f96;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   background: #f5f9fe;
+}
+
+.devices-table tbody td {
+  font-size: 0.88rem;
 }
 
 .devices-table tbody tr:last-child td,
@@ -174,18 +180,18 @@ select {
 }
 
 .sort-button span {
-  min-width: 30px;
+  min-width: 24px;
   color: #6f90b4;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
 }
 
 .device-cell {
   display: grid;
-  gap: 3px;
+  gap: 1px;
 }
 
 .device-cell strong {
-  font-size: 0.98rem;
+  font-size: 0.9rem;
 }
 
 .device-cell span,
@@ -201,9 +207,9 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
 }
 
@@ -309,21 +315,25 @@ select {
 }
 
 .pagination-row {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .top-border {
-  padding-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid #e3edf8;
 }
 
 .pager-button {
   border: 1px solid #bfd4ea;
-  border-radius: 8px;
-  padding: 7px 10px;
+  border-radius: 6px;
+  padding: 5px 8px;
   color: #27568f;
   background: #ffffff;
   cursor: pointer;
+}
+
+.pagination-meta {
+  font-size: 0.82rem;
 }
 
 .pager-button:disabled {
