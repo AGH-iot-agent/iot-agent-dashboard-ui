@@ -1,10 +1,12 @@
+/* global globalThis */
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import './App.css';
 
 const EMPTY_SUMMARY = { devicesOnline: 0, activeAlerts: 0, eventsPerMinute: 0 };
 const DEFAULT_TAB = 'overview';
-const HISTORY_PAGE_SIZE = 12;
+const HISTORY_PAGE_SIZE = 8;
+const DEVICES_PAGE_SIZE = 6;
 
 function MiniLineChart({ points, dataKey, color, label }) {
   if (!points || points.length === 0) {
@@ -119,9 +121,10 @@ function App() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortConfig, setSortConfig] = useState({ column: 'lastSeen', direction: 'desc' });
   const [historyPage, setHistoryPage] = useState(1);
+  const [devicesPage, setDevicesPage] = useState(1);
 
   const redirectToLogin = () => {
-    window.location.assign('/login');
+    globalThis.location.assign('/login');
   };
 
   const loadJsonOrFallback = async (url, fallbackValue) => {
@@ -212,7 +215,7 @@ function App() {
   const handleLogout = () => {
     fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       .finally(() => {
-        window.location.assign('/login');
+        globalThis.location.assign('/login');
       });
   };
 
@@ -314,27 +317,42 @@ function App() {
     return rows;
   }, [filteredDevices, sortConfig]);
 
-  const zoneSummary = useMemo(() => {
-    return latestTelemetry.reduce((acc, entry) => {
-      const zone = entry.krakowZone || 'UNKNOWN';
-      const current = acc[zone] || { zone, leaks: 0, devices: 0 };
-      current.devices += 1;
-      if (entry.leak) {
-        current.leaks += 1;
-      }
-      acc[zone] = current;
-      return acc;
-    }, {});
-  }, [latestTelemetry]);
+  useEffect(() => {
+    setDevicesPage(1);
+  }, [searchQuery, statusFilter, sortConfig]);
 
-  const selectedDevice = devices.find(device => String(device.id) === String(selectedDeviceId)) || null;
+  const devicePagesCount = Math.max(1, Math.ceil(sortedDevices.length / DEVICES_PAGE_SIZE));
+  const pagedDevices = sortedDevices.slice(
+    (devicesPage - 1) * DEVICES_PAGE_SIZE,
+    devicesPage * DEVICES_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    if (devicesPage > devicePagesCount) {
+      setDevicesPage(devicePagesCount);
+    }
+  }, [devicePagesCount, devicesPage]);
+
+  useEffect(() => {
+    if (sortedDevices.length === 0) {
+      setSelectedDeviceId('');
+      return;
+    }
+
+    const selectedExists = sortedDevices.some(device => String(device.id) === String(selectedDeviceId));
+    if (!selectedExists) {
+      setSelectedDeviceId(String(sortedDevices[0].id));
+    }
+  }, [sortedDevices, selectedDeviceId]);
+
+  const selectedDevice = sortedDevices.find(device => String(device.id) === String(selectedDeviceId)) || null;
   const selectedTelemetry = selectedDevice
     ? latestTelemetry.find(entry => matchesDevice(entry, selectedDevice.id)) || null
     : null;
   const selectedAlerts = selectedDevice
     ? alerts.filter(alert => matchesDevice(alert, selectedDevice.id))
     : [];
-  const recentSeries = [...series].slice(-10).reverse();
+  const recentSeries = [...series].slice(-6).reverse();
   const sortedSeriesHistory = useMemo(() => {
     return [...series].sort((a, b) => {
       const left = toSortableTimestamp(a.timestamp || a.createdAt || a.recordedAt);
@@ -355,12 +373,6 @@ function App() {
   useEffect(() => {
     setHistoryPage(1);
   }, [selectedDeviceId]);
-
-  const openDevice = deviceId => {
-    setSelectedDeviceId(String(deviceId));
-    setSelectedTab(DEFAULT_TAB);
-    setHistoryPage(1);
-  };
 
   const requestSort = column => {
     setSortConfig(prev => {
@@ -390,11 +402,8 @@ function App() {
 
     return (
       <div className="detail-grid">
-        <section className="detail-panel">
-          <div className="panel-heading">
-            <h3>Dane bazowe</h3>
-            <span className={`status ${(selectedDevice.status || '').toLowerCase()}`}>{selectedDevice.status || 'UNKNOWN'}</span>
-          </div>
+        <section className="detail-card">
+          <h3>Dane bazowe</h3>
           <table className="devices-table compact">
             <tbody>
               <tr>
@@ -406,24 +415,19 @@ function App() {
                 <td>{selectedDevice.name || '-'}</td>
               </tr>
               <tr>
-                <th>Strefa</th>
-                <td>{selectedDevice.krakowZone || selectedTelemetry?.krakowZone || '-'}</td>
+                <th>Status</th>
+                <td>{selectedDevice.status || 'UNKNOWN'}</td>
               </tr>
               <tr>
-                <th>Ostatnia aktywnosc</th>
-                <td>{formatTimestamp(selectedTelemetry?.timestamp || selectedDevice.updatedAt)}</td>
+                <th>Strefa</th>
+                <td>{selectedDevice.krakowZone || selectedTelemetry?.krakowZone || '-'}</td>
               </tr>
             </tbody>
           </table>
         </section>
 
-        <section className="detail-panel">
-          <div className="panel-heading">
-            <h3>Ostatni odczyt</h3>
-            <span className={`pill ${selectedTelemetry?.leak ? 'pill-alert' : 'pill-ok'}`}>
-              {selectedTelemetry?.leak ? 'Leak detected' : 'Stable'}
-            </span>
-          </div>
+        <section className="detail-card">
+          <h3>Ostatni odczyt</h3>
           <table className="devices-table compact">
             <tbody>
               <tr>
@@ -439,17 +443,15 @@ function App() {
                 <td>{selectedTelemetry?.leak ? 'Tak' : 'Nie'}</td>
               </tr>
               <tr>
-                <th>Aktywne alerty</th>
-                <td>{selectedAlerts.length}</td>
+                <th>Aktualizacja</th>
+                <td>{formatTimestamp(selectedTelemetry?.timestamp || selectedDevice.updatedAt)}</td>
               </tr>
             </tbody>
           </table>
         </section>
 
-        <section className="detail-panel wide">
-          <div className="panel-heading">
-            <h3>Lista atrybutow sensora</h3>
-          </div>
+        <section className="detail-card detail-card-wide">
+          <h3>Atrybuty sensora</h3>
           <table className="devices-table compact">
             <thead>
               <tr>
@@ -473,26 +475,22 @@ function App() {
 
   const renderTelemetryTab = () => (
     <div className="detail-grid">
-      <section className="detail-panel wide">
-        <div className="panel-heading">
-          <h3>Trendy czasowe</h3>
-        </div>
+      <section className="detail-card detail-card-wide">
+        <h3>Trendy telemetryczne</h3>
         <div className="chart-grid">
-          <div className="chart-card inset">
+          <div className="chart-card">
             <h4>Temperatura</h4>
-            <MiniLineChart points={series} dataKey="temperatureC" color="#f97316" label="temperatura" />
+            <MiniLineChart points={series} dataKey="temperatureC" color="#2d7ff9" label="temperatura" />
           </div>
-          <div className="chart-card inset">
+          <div className="chart-card">
             <h4>Zuzycie energii</h4>
-            <MiniLineChart points={series} dataKey="energyUsageW" color="#0f766e" label="energia" />
+            <MiniLineChart points={series} dataKey="energyUsageW" color="#4da7ff" label="energia" />
           </div>
         </div>
       </section>
 
-      <section className="detail-panel wide">
-        <div className="panel-heading">
-          <h3>Ostatnie probki telemetryczne</h3>
-        </div>
+      <section className="detail-card detail-card-wide">
+        <h3>Ostatnie probki</h3>
         {recentSeries.length === 0 ? (
           <p className="empty-state">Brak historii telemetrycznej dla wybranego urzadzenia.</p>
         ) : (
@@ -522,11 +520,8 @@ function App() {
   );
 
   const renderAlertsTab = () => (
-    <section className="detail-panel wide">
-      <div className="panel-heading">
-        <h3>Alerty urzadzenia</h3>
-        <span className="pill neutral">{selectedAlerts.length} wpisow</span>
-      </div>
+    <section className="detail-card detail-card-wide">
+      <h3>Alerty urzadzenia</h3>
       {selectedAlerts.length === 0 ? (
         <p className="empty-state">Brak alertow dla wybranego urzadzenia.</p>
       ) : (
@@ -555,12 +550,11 @@ function App() {
   );
 
   const renderHistoryTab = () => (
-    <section className="detail-panel wide">
-      <div className="panel-heading">
+    <section className="detail-card detail-card-wide">
+      <div className="detail-toolbar">
         <h3>Historia telemetryczna</h3>
-        <span className="pill neutral">Strona {historyPage} / {historyPagesCount}</span>
+        <span className="history-caption">Strona {historyPage} / {historyPagesCount}</span>
       </div>
-
       {sortedSeriesHistory.length === 0 ? (
         <p className="empty-state">Brak historii telemetrycznej dla wybranego urzadzenia.</p>
       ) : (
@@ -594,9 +588,7 @@ function App() {
             >
               Poprzednia
             </button>
-            <span className="pagination-meta">
-              Pokazano {pagedHistory.length} z {sortedSeriesHistory.length} rekordow
-            </span>
+            <span className="pagination-meta">{sortedSeriesHistory.length} rekordow</span>
             <button
               className="pager-button"
               onClick={() => setHistoryPage(page => Math.min(historyPagesCount, page + 1))}
@@ -612,237 +604,196 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
+      <header className="app-header">
         <div>
-          <p className="eyebrow">iot fleet workspace</p>
-          <h1>Dashboard urzadzen</h1>
+          <h1>IoT Agent Dashboard</h1>
+          <p className="header-subtitle">Widok urzadzen i szczegolow na jednej stronie.</p>
         </div>
-        <button className="ghost-button" onClick={handleLogout}>Wyloguj</button>
+        <button className="logout-button" onClick={handleLogout}>Wyloguj</button>
       </header>
 
       <main className="dashboard-container">
         <section className="metrics-strip">
-          <article className="metric-card accent">
-            <span>Urzadzenia online</span>
+          <article className="metric-card">
+            <span>Devices Online</span>
             <strong>{summary?.devicesOnline ?? 0}</strong>
           </article>
           <article className="metric-card">
-            <span>Aktywne alerty</span>
+            <span>Active Alerts</span>
             <strong>{summary?.activeAlerts ?? 0}</strong>
           </article>
           <article className="metric-card">
-            <span>Zdarzenia / min</span>
+            <span>Events / min</span>
             <strong>{summary?.eventsPerMinute ?? 0}</strong>
           </article>
         </section>
 
-        {selectedDevice ? (
-          <section className="detail-view">
-            <div className="detail-header">
-              <div>
-                <button className="back-button" onClick={() => setSelectedDeviceId('')}>Powrot do tabeli</button>
-                <p className="eyebrow">widok urzadzenia</p>
-                <h2>{selectedDevice.name || selectedDevice.id}</h2>
-                <p className="hero-copy">
-                  Szczegoly dla sensora {selectedDevice.id} w ukladzie zakladek z danymi telemetrycznymi, alertami i zestawem atrybutow.
-                </p>
-              </div>
-              <div className="detail-badges">
-                <span className={`status ${(selectedDevice.status || '').toLowerCase()}`}>{selectedDevice.status || 'UNKNOWN'}</span>
-                <span className="pill neutral">{selectedDevice.krakowZone || selectedTelemetry?.krakowZone || 'NO ZONE'}</span>
-              </div>
+        <section className="content-card">
+          <div className="section-header">
+            <div>
+              <h2>Urzadzenia</h2>
+              <p>Wybierz urzadzenie z tabeli. Szczegoly pojawiaja sie ponizej na tej samej stronie.</p>
             </div>
+            <div className="table-controls">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
+                placeholder="Szukaj po ID, nazwie lub strefie"
+              />
+              <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+                <option value="all">Wszystkie statusy</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
 
-            <nav className="tabs-nav" aria-label="Szczegoly urzadzenia">
-              <button
-                className={selectedTab === 'overview' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('overview')}
-              >
-                Przeglad
-              </button>
-              <button
-                className={selectedTab === 'telemetry' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('telemetry')}
-              >
-                Telemetria
-              </button>
-              <button
-                className={selectedTab === 'alerts' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('alerts')}
-              >
-                Alerty
-              </button>
-              <button
-                className={selectedTab === 'history' ? 'tab active' : 'tab'}
-                onClick={() => setSelectedTab('history')}
-              >
-                Historia
-              </button>
-            </nav>
-
-            {selectedTab === 'overview' && renderOverviewTab()}
-            {selectedTab === 'telemetry' && renderTelemetryTab()}
-            {selectedTab === 'alerts' && renderAlertsTab()}
-            {selectedTab === 'history' && renderHistoryTab()}
-          </section>
-        ) : (
-          <>
-            <section className="hero-panel">
-              <div>
-                <p className="eyebrow">widok glowny</p>
-                <h2>Tabela urzadzen jako punkt wejsciowy</h2>
-                <p className="hero-copy">
-                  Klikniecie w wiersz otwiera szczegoly urzadzenia z zakladkami i zestawem tabel dla telemetrii, alertow i danych sensora.
-                </p>
-              </div>
-              <div className="table-controls">
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={event => setSearchQuery(event.target.value)}
-                  placeholder="Szukaj po ID, nazwie lub strefie"
-                />
-                <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
-                  <option value="all">Wszystkie statusy</option>
-                  <option value="online">Online</option>
-                  <option value="offline">Offline</option>
-                </select>
-              </div>
-            </section>
-
-            <section className="table-panel">
-              {filteredDevices.length === 0 ? (
-                <p className="empty-state">Brak urzadzen spelniajacych filtr lub brak danych z API.</p>
-              ) : (
-                <table className="devices-table master-table">
-                  <thead>
-                    <tr>
-                      <th>Urzadzenie</th>
-                      <th>
-                        <button className="sort-button" onClick={() => requestSort('status')}>
-                          Status <span>{getSortState('status')}</span>
-                        </button>
-                      </th>
-                      <th>
-                        <button className="sort-button" onClick={() => requestSort('zone')}>
-                          Strefa <span>{getSortState('zone')}</span>
-                        </button>
-                      </th>
-                      <th>
-                        <button className="sort-button" onClick={() => requestSort('temperature')}>
-                          Temperatura <span>{getSortState('temperature')}</span>
-                        </button>
-                      </th>
-                      <th>
-                        <button className="sort-button" onClick={() => requestSort('energy')}>
-                          Energia <span>{getSortState('energy')}</span>
-                        </button>
-                      </th>
-                      <th>Leak</th>
-                      <th>
-                        <button className="sort-button" onClick={() => requestSort('alerts')}>
-                          Alerty <span>{getSortState('alerts')}</span>
-                        </button>
-                      </th>
-                      <th>
-                        <button className="sort-button" onClick={() => requestSort('lastSeen')}>
-                          Ostatni odczyt <span>{getSortState('lastSeen')}</span>
-                        </button>
-                      </th>
-                      <th>Akcja</th>
+          {sortedDevices.length === 0 ? (
+            <p className="empty-state">Brak urzadzen spelniajacych filtr lub brak danych z API.</p>
+          ) : (
+            <>
+              <table className="devices-table master-table">
+                <thead>
+                  <tr>
+                    <th>Urzadzenie</th>
+                    <th>
+                      <button className="sort-button" onClick={() => requestSort('status')}>
+                        Status <span>{getSortState('status')}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button className="sort-button" onClick={() => requestSort('zone')}>
+                        Strefa <span>{getSortState('zone')}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button className="sort-button" onClick={() => requestSort('temperature')}>
+                        Temperatura <span>{getSortState('temperature')}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button className="sort-button" onClick={() => requestSort('energy')}>
+                        Energia <span>{getSortState('energy')}</span>
+                      </button>
+                    </th>
+                    <th>Leak</th>
+                    <th>
+                      <button className="sort-button" onClick={() => requestSort('alerts')}>
+                        Alerty <span>{getSortState('alerts')}</span>
+                      </button>
+                    </th>
+                    <th>
+                      <button className="sort-button" onClick={() => requestSort('lastSeen')}>
+                        Ostatni odczyt <span>{getSortState('lastSeen')}</span>
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedDevices.map(device => (
+                    <tr
+                      key={device.id}
+                      onClick={() => setSelectedDeviceId(String(device.id))}
+                      className={String(device.id) === String(selectedDeviceId) ? 'selected-row' : ''}
+                    >
+                      <td>
+                        <div className="device-cell">
+                          <strong>{device.name || device.id}</strong>
+                          <span>{device.id}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`status ${(device.status || '').toLowerCase()}`}>{device.status || 'UNKNOWN'}</span>
+                      </td>
+                      <td>{device.krakowZone || device.telemetry?.krakowZone || '-'}</td>
+                      <td>{formatValue(device.temperatureC, ' C')}</td>
+                      <td>{formatValue(device.energyUsageW, ' W')}</td>
+                      <td>{device.leak ? 'Tak' : 'Nie'}</td>
+                      <td>{device.alertsCount}</td>
+                      <td>{formatTimestamp(device.lastSeen)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {sortedDevices.map(device => (
-                      <tr key={device.id} onClick={() => openDevice(device.id)} className="clickable-row">
-                        <td>
-                          <div className="device-cell">
-                            <strong>{device.name || device.id}</strong>
-                            <span>{device.id}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`status ${(device.status || '').toLowerCase()}`}>{device.status || 'UNKNOWN'}</span>
-                        </td>
-                        <td>{device.krakowZone || device.telemetry?.krakowZone || '-'}</td>
-                        <td>{formatValue(device.temperatureC, ' C')}</td>
-                        <td>{formatValue(device.energyUsageW, ' W')}</td>
-                        <td>{device.leak ? 'Tak' : 'Nie'}</td>
-                        <td>{device.alertsCount}</td>
-                        <td>{formatTimestamp(device.lastSeen)}</td>
-                        <td>
-                          <button
-                            className="details-button"
-                            onClick={event => {
-                              event.stopPropagation();
-                              openDevice(device.id);
-                            }}
-                          >
-                            Szczegoly
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
+                  ))}
+                </tbody>
+              </table>
 
-            <section className="summary-grid">
-              <article className="detail-panel">
-                <div className="panel-heading">
-                  <h3>Strefy i wycieki</h3>
-                </div>
-                <table className="devices-table compact">
-                  <thead>
-                    <tr>
-                      <th>Strefa</th>
-                      <th>Urzadzenia</th>
-                      <th>Leaks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.values(zoneSummary).map(zone => (
-                      <tr key={zone.zone}>
-                        <td>{zone.zone}</td>
-                        <td>{zone.devices}</td>
-                        <td>{zone.leaks}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </article>
+              <div className="pagination-row top-border">
+                <button
+                  className="pager-button"
+                  onClick={() => setDevicesPage(page => Math.max(1, page - 1))}
+                  disabled={devicesPage <= 1}
+                >
+                  Poprzednia
+                </button>
+                <span className="pagination-meta">Strona {devicesPage} / {devicePagesCount}</span>
+                <button
+                  className="pager-button"
+                  onClick={() => setDevicesPage(page => Math.min(devicePagesCount, page + 1))}
+                  disabled={devicesPage >= devicePagesCount}
+                >
+                  Nastepna
+                </button>
+              </div>
+            </>
+          )}
+        </section>
 
-              <article className="detail-panel">
-                <div className="panel-heading">
-                  <h3>Najnowsze alerty</h3>
-                </div>
-                {alerts.length === 0 ? (
-                  <p className="empty-state inline">Brak aktywnych alertow.</p>
-                ) : (
-                  <table className="devices-table compact">
-                    <thead>
-                      <tr>
-                        <th>Device</th>
-                        <th>Severity</th>
-                        <th>Powod</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {alerts.slice(0, 6).map((alert, index) => (
-                        <tr key={`${alert.id || alert.timestamp || index}-${index}`}>
-                          <td>{alert.deviceId || '-'}</td>
-                          <td>{alert.severity || '-'}</td>
-                          <td>{alert.reason || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </article>
-            </section>
-          </>
-        )}
+        <section className="content-card device-details">
+          <div className="section-header section-header-stack">
+            <div>
+              <h2>Szczegoly urzadzenia</h2>
+              <p>
+                {selectedDevice
+                  ? `Wybrane urzadzenie: ${selectedDevice.name || selectedDevice.id}`
+                  : 'Brak wybranego urzadzenia.'}
+              </p>
+            </div>
+            {selectedDevice && (
+              <div className="detail-meta">
+                <span className={`status ${(selectedDevice.status || '').toLowerCase()}`}>{selectedDevice.status || 'UNKNOWN'}</span>
+                <span className="zone-chip">{selectedDevice.krakowZone || selectedTelemetry?.krakowZone || 'NO ZONE'}</span>
+              </div>
+            )}
+          </div>
+
+          {selectedDevice ? (
+            <>
+              <nav className="tabs-nav" aria-label="Szczegoly urzadzenia">
+                <button
+                  className={selectedTab === 'overview' ? 'tab active' : 'tab'}
+                  onClick={() => setSelectedTab('overview')}
+                >
+                  Przeglad
+                </button>
+                <button
+                  className={selectedTab === 'telemetry' ? 'tab active' : 'tab'}
+                  onClick={() => setSelectedTab('telemetry')}
+                >
+                  Telemetria
+                </button>
+                <button
+                  className={selectedTab === 'alerts' ? 'tab active' : 'tab'}
+                  onClick={() => setSelectedTab('alerts')}
+                >
+                  Alerty
+                </button>
+                <button
+                  className={selectedTab === 'history' ? 'tab active' : 'tab'}
+                  onClick={() => setSelectedTab('history')}
+                >
+                  Historia
+                </button>
+              </nav>
+
+              {selectedTab === 'overview' && renderOverviewTab()}
+              {selectedTab === 'telemetry' && renderTelemetryTab()}
+              {selectedTab === 'alerts' && renderAlertsTab()}
+              {selectedTab === 'history' && renderHistoryTab()}
+            </>
+          ) : (
+            <p className="empty-state">Wybierz urzadzenie z tabeli, aby zobaczyc szczegoly.</p>
+          )}
+        </section>
       </main>
     </div>
   );
