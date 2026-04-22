@@ -123,6 +123,16 @@ istio:
                 number: 80
       - match:
           - uri:
+              prefix: /api/telemetry
+        rewrite:
+          uri: /telemetry
+        route:
+          - destination:
+              host: iot-agent-dashboard-api.iotag-dev.svc.cluster.local
+              port:
+                number: 80
+      - match:
+          - uri:
               prefix: /
         route:
           - destination:
