@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, feat/IOTAG-01-dashboard-ui]
+  pull_request:
+    branches: [ main, feat/IOTAG-01-dashboard-ui ]
+
+jobs:
+  pipeline:
+    uses: AGH-iot-agent/common-pipeline/.github/workflows/common-pipeline.yml@feat/IOTAG-01-common-pipeline
+    secrets: inherit
+    with:
+      service_name: iot-agent-dashboard-ui
+      project_type: node
+      node_version: "20"
+      values_file: ${{ github.event_name == 'pull_request' && 'Helm/values-sbx.yaml' || 'Helm/values-dev.yaml' }}
+      chart_type: deployment
+      namespace: ${{ github.event_name == 'pull_request' && 'iotag-sbx' || 'iotag-dev' }}
